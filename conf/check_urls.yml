@@ -1,0 +1,10 @@
+settings:
+    dry_run: True
+
+urls:
+    slacker.login:
+        url: http://localhost:8000/admin/login/
+        status_code: [200]
+        timeout: 60
+        headers:
+            Host: slacker.hack.hipolabs.com

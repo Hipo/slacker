@@ -1,0 +1,47 @@
+version: "3.4"
+
+services:
+  nginx:
+    image: nginx:1.14.0
+    ports:
+      - "8000:80"
+    volumes:
+      - "./conf/nginx_development.conf:/etc/nginx/conf.d/default.conf"
+    restart: unless-stopped
+
+  slacker:
+    image: slacker
+    build:
+      context: .
+      target: application_development
+    volumes:
+      - ".:/slacker"
+      - ".data/root:/root"
+    environment:
+      - DJANGO_SETTINGS_MODULE=slacker.settings.development
+    restart: unless-stopped
+    tty: true
+    depends_on:
+      - postgres
+    ports:
+        - "3500:3500"
+
+  postgres:
+    image: mdillon/postgis:11
+    environment:
+      - POSTGRES_DB=slacker
+      - POSTGRES_USER=slacker
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - ".data/db:/var/lib/postgresql/data"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --quiet || exit 1"]
+      interval: 1m
+      timeout: 30s
+      retries: 10
+      start_period: 40s
+
+    container_name: slacker_postgres
+    restart: unless-stopped

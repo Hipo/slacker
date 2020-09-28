@@ -1,0 +1,15 @@
+version: "3.4"
+
+services:
+
+  slacker:
+    user: ${CONTAINER_UID}:${CONTAINER_GID}
+    environment:
+      - DJANGO_SETTINGS_MODULE=slacker.settings.production
+    command: gunicorn --config /slacker/conf/gunicorn.conf.py slacker.wsgi
+
+  notification_sender:
+    user: ${CONTAINER_UID}:${CONTAINER_GID}
+    environment:
+    - DJANGO_SETTINGS_MODULE=slacker.settings.production
+    command: python manage.py send_notifications
