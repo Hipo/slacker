@@ -21,8 +21,15 @@ class User(PermissionsMixin, AbstractBaseModel, AbstractBaseUser):
 
     is_staff = models.BooleanField(default=False, help_text=_("Only staff users can access Django Admin."))
 
+    # Slack
     slack_user_id = models.CharField(max_length=255, blank=True)
     slack_workspace = models.ForeignKey("slack.SlackWorkspace", related_name="users", on_delete=models.CASCADE)
+
+    # Moku
+    moku_email = models.EmailField(blank=True)
+    moku_password = models.CharField(blank=True, max_length=255)
+    moku_api_token = models.CharField(blank=True, max_length=255)
+    is_moku_credentials_validated = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ["email"]

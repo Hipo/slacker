@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from hipo_django_core.managers import BaseModelManager
 
 from operator import itemgetter
 
@@ -16,6 +17,8 @@ class SlackWorkspace(models.Model):
     class Meta:
         verbose_name = "Slack Workspace"
         verbose_name_plural = "Slack Workspaces"
+
+    objects = BaseModelManager()
 
     def __str__(self):
         return f"{self.team_name}"

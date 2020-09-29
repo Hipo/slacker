@@ -9,7 +9,7 @@ SERVER_URL = "http://localhost:8000"
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '9e7706c6.ngrok.io',
+    'd6d458e35958.ngrok.io',
 ]
 
 INSTALLED_APPS = INSTALLED_APPS + [

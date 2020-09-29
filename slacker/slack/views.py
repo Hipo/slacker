@@ -15,16 +15,12 @@ from slacker.users.models import User
 SLACK_OAUTH_URL = "https://slack.com/api/oauth.access"
 SLACK_OAUTH_SCOPES = "channels:read,chat:write:bot,commands,files:write:user,team:read"
 
-SLACK_COMMAND_AUTHENTICATE = 'authenticate'
-SLACK_COMMAND_CONFIGURE = 'configure'
-SLACK_COMMAND_UPDATE_CHANNELS = 'update_channels'
-SLACK_COMMAND_SHOW_EVENTS = 'show_events'
+SLACK_COMMAND_MOKU_EMAIL = 'moku_email'
+SLACK_COMMAND_MOKU_PASSWORD = 'moku_password'
 
 ALLOWED_COMMANDS = [
-    SLACK_COMMAND_SHOW_EVENTS,
-    SLACK_COMMAND_UPDATE_CHANNELS,
-    SLACK_COMMAND_CONFIGURE,
-    SLACK_COMMAND_AUTHENTICATE,
+    SLACK_COMMAND_MOKU_EMAIL,
+    SLACK_COMMAND_MOKU_PASSWORD,
 ]
 
 
@@ -77,20 +73,38 @@ class SlackCommandView(View):
     Handles incoming commands from Slack
     """
     def post(self, request):
+        """
+        {'token': ['xXUGp4uz5jXEWARaiqwOSpOW'],
+        'team_id': ['T025D0M1W'],
+        'team_domain': ['hipo'],
+        'channel_id': ['C01BAM09N7P'],
+        'channel_name': ['slacker'],
+        'user_id': ['U1XAH2108'],
+        'user_name': ['efe'],
+        'command': ['/slacker'],
+        'text': ['hello'],
+        'api_app_id': ['A01BEN64K6H'],
+        'response_url': ['https://hooks.slack.com/commands/T025D0M1W/1404536512737/MUcXMTrhvjU21GhoIXZ0Ci74'],
+        'trigger_id': ['1392114339171.2183021064.cded529f7b3f112118fa93953bb4ce62']}
+        """
         command = request.POST.get('text').strip()
         team_id = request.POST.get('team_id')
         user_id = request.POST.get('user_id')
         channel_id = request.POST.get('channel_id')
-        
+
+        return JsonResponse({
+            'response_type': 'ephemeral',
+            'text': "{name}, nasılsın abi?".format(name=request.POST.get('user_name'))
+        })
+
         if command not in ALLOWED_COMMANDS:
             return JsonResponse({
                 'response_type': 'ephemeral',
                 'text': "Sorry, I don't know this command. Please try one of the allowed commands."
             })
 
-        try:
-            workspace = SlackWorkspace.objects.get(team_id=team_id)
-        except:
+        workspace = SlackWorkspace.objects.get_or_none(team_id=team_id)
+        if not workspace:
             return JsonResponse({
                 'response_type': 'ephemeral',
                 'text': "Your workspace doesn't seem to be setup, please install slacker first."
@@ -108,7 +122,6 @@ class SlackCommandView(View):
             )
             message = f'Follow this link to authenticate your Google Calendar account: {url}'
         elif command == SLACK_COMMAND_CONFIGURE:
-            channel = workspace.channels.get(channel_id=channel_id)
             block_message = "Pick the calendars you would like to track"
             
             payload = [
