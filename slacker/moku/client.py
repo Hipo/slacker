@@ -2,6 +2,7 @@ import requests
 from datetime import datetime
 
 import pytz
+from django.core.exceptions import ValidationError
 
 
 class MokuClient:
@@ -9,10 +10,11 @@ class MokuClient:
     moku_login_url = "https://hipo.getmoku.com/api/auth/login/"
     moku_user_info_url = "https://hipo.getmoku.com/api/auth/user/"
 
-    def __init__(self, email, password):
-        self.login(email, password)
+    def __init__(self, api_token):
+        self.api_token = api_token
 
-    def login(self, email, password):
+    @classmethod
+    def get_api_token(cls, email, password):
         headers = {"Content-Type": "application/json"}
         json = {
             "email": email,
@@ -20,15 +22,18 @@ class MokuClient:
         }
 
         response = requests.post(
-            url=self.moku_login_url,
+            url=cls.moku_login_url,
             headers=headers,
             json=json
-        ).json()
+        )
 
-        self.token = response["key"]
+        if response.status_code != 200:
+            raise ValidationError("Credentials are not correct. I'm disappointed.")
+
+        return response.json()["key"]
 
     def get_user_info(self):
-        headers = {"Authorization": f"Token {self.token}"}
+        headers = {"Authorization": f"Token {self.api_token}"}
         return requests.get(
             url=self.moku_user_info_url,
             headers=headers

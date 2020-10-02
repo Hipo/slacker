@@ -1,10 +1,12 @@
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
+from slacker.moku.client import MokuClient
 from slacker.slack.models import SlackWorkspace
 
 import json
@@ -15,16 +17,13 @@ from slacker.users.models import User
 SLACK_OAUTH_URL = "https://slack.com/api/oauth.access"
 SLACK_OAUTH_SCOPES = "channels:read,chat:write:bot,commands,files:write:user,team:read,users.profile:write"
 
-STATUS_UPDATE_URL = "https://slack.com/api/users.profile.set"
-
 SLACK_COMMAND_HELLO = 'hello'
-SLACK_COMMAND_LOGIN = 'login'
+SLACK_COMMAND_IAM = 'iam'
 
 ALLOWED_COMMANDS = [
     SLACK_COMMAND_HELLO,
-    SLACK_COMMAND_LOGIN,
+    SLACK_COMMAND_IAM,
 ]
-
 
 class SlackOAuthView(View):
     """
@@ -46,27 +45,18 @@ class SlackOAuthView(View):
         }).json()
         
         access_token = response.get('access_token')
-        team_name = response.get('team_name')
         team_id = response.get('team_id')
-        
-        ## TODO: We need to save user's access token to use for API calls.
 
         if not access_token or not team_id:
             return render(request, 'slack/authenticate.html', {
                 'client_id': settings.SLACK_CLIENT_ID,
                 'oauth_scope': SLACK_OAUTH_SCOPES,
             })
-        
-        workspace, created = SlackWorkspace.objects.update_or_create(
-            team_id=team_id,
-            defaults={
-                'access_token': access_token,
-                'team_name': team_name,
-            }
+
+        User.objects.get_or_create(
+            slack_user_id=response["user_id"],
+            slack_access_token=response["access_token"],
         )
-        
-        workspace.update_channels()
-        workspace.update_team_info()
         
         return render(request, 'slack/success.html')
 
@@ -92,51 +82,46 @@ class SlackCommandView(View):
         'trigger_id': ['1392114339171.2183021064.cded529f7b3f112118fa93953bb4ce62']}
         """
         command = request.POST.get('text').strip()
-        team_id = request.POST.get('team_id')
+        username = request.POST.get('user_name')
         user_id = request.POST.get('user_id')
-        channel_id = request.POST.get('channel_id')
-        token = request.POST.get('token')
 
-
-        ## TODO: We need to load user's access token to use for API calls.
-        ## token variable is incorrect now.
-
-        payload =  {
-            "profile": {
-                "status_text": "Testing the app",
-                "status_emoji": ":party-parrot:",
-                "status_expiration": 0
-            }
-        }
-
-        response = requests.post(STATUS_UPDATE_URL, json=payload, headers={"Authorization": f"Bearer {token}"})
-
-        print(response.text)
-
-        return JsonResponse({
-            'response_type': 'ephemeral',
-            'text': "{name}, nasılsın abi?".format(name=request.POST.get('user_name'))
-        })
-
-        if command not in ALLOWED_COMMANDS:
+        if command not in ALLOWED_COMMANDS and not request.POST.get('text').startswith("iam"):
             return JsonResponse({
                 'response_type': 'ephemeral',
                 'text': "Sorry, I don't know this command. Please try one of the allowed commands."
             })
-
-        workspace = SlackWorkspace.objects.get_or_none(team_id=team_id)
-        if not workspace:
+        elif command == SLACK_COMMAND_HELLO:
             return JsonResponse({
                 'response_type': 'ephemeral',
-                'text': "Your workspace doesn't seem to be setup, please install slacker first."
+                'text': f"Hello, @{username}! Click here and get ready! https://658016995333.ngrok.io/slack/oauth/"
             })
+        # elif command == SLACK_COMMAND_IAM:
+        elif request.POST.get('text').startswith("iam"):
+            credentials = request.POST.get('text').split("|")[-1]
+            email, password = credentials.split(":")
+            email = email.replace(">", "")
 
-        message = None
+            user = User.objects.get(slack_user_id=user_id)
+            user.moku_email = email
+            user.moku_password = password
+            user.save()
 
-        if command == SLACK_COMMAND_HELLO:
-            ## NOTE: I think we can show a button to redirect slack login
-        elif command == SLACK_COMMAND_LOGIN:
-            ## TODO: Moku API connection will be here
+            try:
+                moku_api_token = MokuClient.get_api_token(email=user.moku_email, password=user.moku_password)
+            except ValidationError as e:
+                return JsonResponse({
+                    'response_type': 'ephemeral',
+                    'text': e.message
+                })
+
+            user.moku_api_token = moku_api_token
+            user.is_moku_credentials_validated = True
+            user.save()
+
+            return JsonResponse({
+                'response_type': 'ephemeral',
+                'text': f"Thank you, @{username}! Take a break and see what will happen!"
+            })
         else:
             return HttpResponse(status=200)
 

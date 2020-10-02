@@ -10,18 +10,18 @@ class UserAdmin(DjangoUserAdmin):
         ("Credentials", {"fields": (
             "id", "email", "name", "password", "creation_datetime",
         )}),
-        ("Slack", {"fields": ("slack_user_id", "slack_workspace")}),
+        ("Slack", {"fields": ("slack_user_id", "slack_access_token",)}),
+        ("Moku", {"fields": ("moku_email", "moku_api_token",)}),
 
         ("Permissions", {"fields": ("is_staff", "is_superuser")}),
     )
     readonly_fields = ("id", "creation_datetime",)
-    list_display = ("id", "name", "slack_workspace", "email")
+    list_display = ("id", "name", "email")
     list_filter = ("is_staff", "is_superuser",)
     search_fields = ("id", "email", "name")
     form = UserChangeForm
     add_form = UserCreationForm
     ordering = ('-creation_datetime',)
-    raw_id_fields = ("slack_workspace", )
 
     add_fieldsets = (
         (
