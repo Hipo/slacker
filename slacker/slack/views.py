@@ -13,14 +13,16 @@ import requests
 from slacker.users.models import User
 
 SLACK_OAUTH_URL = "https://slack.com/api/oauth.access"
-SLACK_OAUTH_SCOPES = "channels:read,chat:write:bot,commands,files:write:user,team:read"
+SLACK_OAUTH_SCOPES = "channels:read,chat:write:bot,commands,files:write:user,team:read,users.profile:write"
 
-SLACK_COMMAND_MOKU_EMAIL = 'moku_email'
-SLACK_COMMAND_MOKU_PASSWORD = 'moku_password'
+STATUS_UPDATE_URL = "https://slack.com/api/users.profile.set"
+
+SLACK_COMMAND_HELLO = 'hello'
+SLACK_COMMAND_LOGIN = 'login'
 
 ALLOWED_COMMANDS = [
-    SLACK_COMMAND_MOKU_EMAIL,
-    SLACK_COMMAND_MOKU_PASSWORD,
+    SLACK_COMMAND_HELLO,
+    SLACK_COMMAND_LOGIN,
 ]
 
 
@@ -47,6 +49,8 @@ class SlackOAuthView(View):
         team_name = response.get('team_name')
         team_id = response.get('team_id')
         
+        ## TODO: We need to save user's access token to use for API calls.
+
         if not access_token or not team_id:
             return render(request, 'slack/authenticate.html', {
                 'client_id': settings.SLACK_CLIENT_ID,
@@ -91,6 +95,23 @@ class SlackCommandView(View):
         team_id = request.POST.get('team_id')
         user_id = request.POST.get('user_id')
         channel_id = request.POST.get('channel_id')
+        token = request.POST.get('token')
+
+
+        ## TODO: We need to load user's access token to use for API calls.
+        ## token variable is incorrect now.
+
+        payload =  {
+            "profile": {
+                "status_text": "Testing the app",
+                "status_emoji": ":party-parrot:",
+                "status_expiration": 0
+            }
+        }
+
+        response = requests.post(STATUS_UPDATE_URL, json=payload, headers={"Authorization": f"Bearer {token}"})
+
+        print(response.text)
 
         return JsonResponse({
             'response_type': 'ephemeral',
@@ -112,53 +133,10 @@ class SlackCommandView(View):
 
         message = None
 
-        if command == SLACK_COMMAND_AUTHENTICATE:
-            user, _ = User.objects.get_or_create(
-                name=request.POST.get('user_name'),
-                defaults={
-                    'slack_user_id': user_id,
-                    'slack_workspace': workspace,
-                }
-            )
-            message = f'Follow this link to authenticate your Google Calendar account: {url}'
-        elif command == SLACK_COMMAND_CONFIGURE:
-            block_message = "Pick the calendars you would like to track"
-            
-            payload = [
-                {
-                    "type": "section",
-                    "block_id": "calendar-picker",
-                    "text": {
-                        "type": "mrkdwn",
-                        "text": block_message
-                    },
-                    "accessory": {
-                        "action_id": "pick-calendars",
-                        "type": "multi_external_select",
-                        "min_query_length": 0,
-                        "placeholder": {
-                            "type": "plain_text",
-                            "text": "Select calendars"
-                        },
-                    }
-                }
-            ]
-            
-            channel.send_ephemeral_message(user_id, message, blocks=payload)
-        elif command == SLACK_COMMAND_SHOW_EVENTS:
-            #TODO: Display upcoming events
-            channel = workspace.channels.get(channel_id=channel_id)
-            
-            channel.send_question_message("Would you like to create meeting notes?")
-        elif command == SLACK_COMMAND_UPDATE_CHANNELS:
-            workspace.update_channels()
-            
-            message = 'OK, all done! I have updated your channels.'
-
-        if message:
-            return JsonResponse({
-                'text': message,
-            })
+        if command == SLACK_COMMAND_HELLO:
+            ## NOTE: I think we can show a button to redirect slack login
+        elif command == SLACK_COMMAND_LOGIN:
+            ## TODO: Moku API connection will be here
         else:
             return HttpResponse(status=200)
 
