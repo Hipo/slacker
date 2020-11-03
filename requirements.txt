@@ -13,3 +13,5 @@ slackclient==2.2.0
 # ask for `hipo-django-core`
 sentry-sdk==0.12.2
 beautifulsoup4==4.9.2
+django_storages==1.10.1
+boto3==1.15.8
