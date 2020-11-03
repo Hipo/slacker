@@ -23,7 +23,7 @@ echo waking-up.
 
 CONTAINER_UID=$(id -u) CONTAINER_GID=$(id -g) docker-compose -f docker-compose.yml -f docker-compose.production.yml run slacker ./manage.py migrate --no-input
 CONTAINER_UID=$(id -u) CONTAINER_GID=$(id -g) docker-compose -f docker-compose.yml -f docker-compose.production.yml run slacker ./manage.py collectstatic --no-input
-CONTAINER_UID=$(id -u) CONTAINER_GID=$(id -g) docker-compose -f docker-compose.yml -f docker-compose.production.yml start slacker notification_sender
+CONTAINER_UID=$(id -u) CONTAINER_GID=$(id -g) docker-compose -f docker-compose.yml -f docker-compose.production.yml start slacker
 
 docker image prune -f
 docker container prune -f
