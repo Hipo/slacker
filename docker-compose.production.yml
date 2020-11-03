@@ -8,6 +8,27 @@ services:
       - DJANGO_SETTINGS_MODULE=slacker.settings.production
     command: gunicorn --config /slacker/conf/gunicorn.conf.py slacker.wsgi
 
+  postgres:
+    image: postgres:12.4
+    environment:
+      - POSTGRES_DB=slacker
+      - POSTGRES_USER=slacker
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - ".data/db:/var/lib/postgresql/data"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready --quiet || exit 1"]
+      interval: 1m
+      timeout: 30s
+      retries: 10
+      start_period: 40s
+
+    container_name: slacker_postgres
+    restart: unless-stopped
+
+
   notification_sender:
     user: ${CONTAINER_UID}:${CONTAINER_GID}
     environment:

@@ -20,7 +20,7 @@ INSTALLED_APPS = INSTALLED_APPS + [
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': "slacker",
         'USER': "slacker",
         'PASSWORD': "password",

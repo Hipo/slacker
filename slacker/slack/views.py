@@ -7,15 +7,12 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
 from slacker.moku.client import MokuClient
-from slacker.slack.models import SlackWorkspace
 
-import json
-import pprint
 import requests
 from slacker.users.models import User
 
 SLACK_OAUTH_URL = "https://slack.com/api/oauth.access"
-SLACK_OAUTH_SCOPES = "channels:read,chat:write:bot,commands,files:write:user,team:read,users.profile:write"
+SLACK_OAUTH_SCOPES = "channels:read,chat:write:bot,commands,users.profile:write"
 
 SLACK_COMMAND_HELLO = 'hello'
 SLACK_COMMAND_IAM = 'iam'
@@ -124,98 +121,3 @@ class SlackCommandView(View):
             })
         else:
             return HttpResponse(status=200)
-
-
-@method_decorator(csrf_exempt, name='dispatch')
-class SlackInteractiveView(View):
-    """
-    Handles incoming interactive calls from Slack
-    """
-    def post(self, request):
-        payload = json.loads(request.POST.get('payload'))
-        team_id = payload.get('team', {}).get('id')
-        
-        try:
-            workspace = SlackWorkspace.objects.get(team_id=team_id)
-        except:
-            return HttpResponse(status=403)
-        
-        user_id = payload.get('user', {}).get('id')
-        channel_id = payload.get('channel', {}).get('id')
-        actions = payload.get('actions', [])
-        
-        if len(actions) == 0:
-            return HttpResponse(status=403)
-
-        action = actions[0]
-        
-        if action.get("action_id") == "pick-calendars":
-            selected_options = action.get("selected_options", [])
-            """
-
-            calendar_ids = [selected_option["value"] for selected_option in selected_options]
-
-            # Create the calendars of User.
-            user = User.objects.get(slack_user_id=user_id)
-            for selected_option in selected_options:
-                calendar, _ = Calendar.objects.get_or_create(
-                    name=selected_option["text"]["text"],
-                    user=user,
-                    defaults={
-                        'google_calendar_id': selected_option["value"],
-                    }
-                )
-
-            # Delete unchecked calendars
-            Calendar.objects.filter(
-                user=user
-            ).exclude(
-                google_calendar_id__in=calendar_ids
-            ).delete()
-            
-            pprint.pprint(calendar_ids)
-            """
-        elif action.get("value") == "meeting-notes-yes":
-            channel = workspace.channels.get(channel_id=channel_id)
-
-            #TODO: Find actual meeting and create notes with that title
-            channel.create_file("Meeting on Friday, Sept 27, 2019")
-        
-        return HttpResponse(status=200)
-
-
-@method_decorator(csrf_exempt, name='dispatch')
-class SlackLoadMenuView(View):
-    """
-    Handles incoming interactive calls from Slack
-    """
-    def post(self, request):
-        payload = json.loads(request.POST.get('payload'))
-        pprint.pprint(payload)
-        team_id = payload.get('team', {}).get('id')
-        
-        try:
-            workspace = SlackWorkspace.objects.get(team_id=team_id)
-        except:
-            return HttpResponse(status=403)
-        
-        user_id = payload.get('user', {}).get('id')
-        channel_id = payload.get('channel', {}).get('id')
-
-        user = User.objects.get(slack_user_id=user_id, slack_workspace_id=workspace.id)
-        # calendars_list = Calendar.get_google_calendar_list_of_user(user)
-        calendars_list = []
-
-        options = []
-        for calendar_item in calendars_list:
-            options.append({
-                "text": {
-                    "type": "plain_text",
-                    "text": calendar_item["name"]
-                },
-                "value": calendar_item["id"]
-            })
-
-        return JsonResponse({
-            'options': options,
-        })

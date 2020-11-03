@@ -1,11 +1,9 @@
 from django.urls import path
 
-from slacker.slack.views import SlackOAuthView, SlackCommandView, SlackInteractiveView, SlackLoadMenuView
+from slacker.slack.views import SlackOAuthView, SlackCommandView
 
 
 urlpatterns = [
     path(r'oauth/', SlackOAuthView.as_view(), name='slack-oauth'),
     path(r'command/', SlackCommandView.as_view(), name='slack-command'),
-    path(r'interactive/', SlackInteractiveView.as_view(), name='slack-interactive'),
-    path(r'load-menu/', SlackLoadMenuView.as_view(), name='slack-load-menu'),
 ]

@@ -27,7 +27,7 @@ services:
         - "3500:3500"
 
   postgres:
-    image: mdillon/postgis:11
+    image: postgres:12.4
     environment:
       - POSTGRES_DB=slacker
       - POSTGRES_USER=slacker

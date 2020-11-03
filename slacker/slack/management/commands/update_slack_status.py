@@ -2,7 +2,6 @@ from datetime import datetime
 from time import sleep
 
 import pytz
-from django.conf import settings
 from django.core.management import BaseCommand
 from django.utils import timezone
 
@@ -19,7 +18,7 @@ class Command(BaseCommand):
                 moku_client = MokuClient(api_token=user.moku_api_token)
                 moku_user_info = moku_client.get_user_info()
 
-                if moku_user_info["status"] == MOKU_STATUS_ON_BREAK:
+                if moku_user_info["status"] == MOKU_STATUS_ON_BREAK and user.moku_status != MOKU_STATUS_ON_BREAK:
                     if moku_user_info["status_end_datetime"]:
                         parsed_datetime = datetime.fromisoformat(moku_user_info["status_end_datetime"].replace("+0000", ""))
                         timezone_offsett = pytz.timezone('Europe/Istanbul').localize(parsed_datetime).strftime("%z")
@@ -33,10 +32,16 @@ class Command(BaseCommand):
                         description=message,
                         emoji=":coffee:"
                     )
-                elif moku_user_info["status"] == MOKU_STATUS_WORKING:
+                    print(message)
+                elif moku_user_info["status"] == MOKU_STATUS_WORKING and user.moku_status != MOKU_STATUS_WORKING:
                     user.set_slack_status(
                         description="",
                         emoji=""
                     )
+                    print("someone came back.")
+
+                user.moku_status = moku_user_info["status"]
+                user.save()
 
             sleep(3)
+            print(timezone.now())

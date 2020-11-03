@@ -17,16 +17,17 @@ ALLOWED_HOSTS = [
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': "slacker",
         'USER': "slacker",
         'PASSWORD': secrets.POSTGRES_PASSWORD,
-        'HOST': "hackdb.cmq91upkqjfq.us-east-1.rds.amazonaws.com",
+        'HOST': "postgres",
         'PORT': '5432',
     }
 }
 
 sentry_sdk.init(
     dsn=secrets.SENTRY_DSN,
-    integrations=[DjangoIntegration()]
+    integrations=[DjangoIntegration()],
+    send_default_pii=True,
 )
