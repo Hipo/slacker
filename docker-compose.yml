@@ -7,3 +7,13 @@ services:
       context: .
       target: application
     container_name: slacker_app
+
+  update_slack_status:
+    image: slacker
+    environment:
+      - DJANGO_SETTINGS_MODULE=slacker.settings.production
+    command: python manage.py update_slack_status
+    container_name: update_slack_status
+    restart: on-failure
+    depends_on:
+      - slacker
