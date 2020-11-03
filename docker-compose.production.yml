@@ -7,8 +7,6 @@ services:
     environment:
       - DJANGO_SETTINGS_MODULE=slacker.settings.production
     command: gunicorn --config /slacker/conf/gunicorn.conf.py slacker.wsgi
-    depends_on:
-      - update_slack_status
 
   postgres:
     image: postgres:12.4
